@@ -691,11 +691,7 @@ window.compartilharEmail = compartilharEmail;
 function renderExportBars() {
   const html = `
     <div class="export-bar">
-      <button class="btn-export btn-export-save" onclick="exportarExcel()">⬇ Salvar planilha</button>
-      <button class="btn-export btn-export-wpp"  onclick="compartilharEmail()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-        E-mail
-      </button>
+      <button class="btn-export btn-export-save" onclick="exportarExcel()">⬇ Salvar planilha Excel</button>
     </div>`;
   ['caixa','receitas','preco'].forEach(id => {
     const el = document.getElementById('export-bar-'+id);
