@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="theme-color" content="#FFFDF7"/>
+<title>Meu Negócio</title>
+<style>
+  :root {
+    --bg: #FFFDF7;
+    --surface: #F5F2EA;
+    --surface2: #EDE9DF;
+    --border: #D9D4C7;
+    --text: #1C1A16;
+    --text2: #6B6559;
+    --text3: #9E9689;
+    --entrada: #1A6B44;
+    --entrada-bg: #E8F5EE;
+    --saida: #8B2E12;
+    --saida-bg: #FAF0EC;
+    --accent: #C45B1E;
+    --accent-bg: #FDF0E8;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color: var(--text); font-size: 16px; }
+  
+  /* NAV */
+  #nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px 8px; border: none; background: none; cursor: pointer; color: var(--text3); font-size: 10px; font-weight: 500; letter-spacing: 0.02em; }
+  .nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-item.active { color: var(--accent); }
+
+  /* SCREENS */
+  .screen { display: none; padding: 0 0 90px; min-height: 100vh; }
+  .screen.active { display: block; }
+  .header { padding: 20px 16px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .page-content { padding: 0 16px; }
+
+  /* CARDS */
+  .card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card-white { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  
+  /* SALDO */
+  .saldo-hero { background: var(--text); color: var(--bg); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+  .saldo-hero .label { font-size: 12px; opacity: 0.6; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .saldo-hero .valor { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+  .saldo-hero .valor.neg { color: #F4A27A; }
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--surface); border-radius: var(--radius-sm); padding: 12px 14px; }
+  .stat .slabel { font-size: 11px; color: var(--text3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat .sval { font-size: 17px; font-weight: 600; }
+  .sval.e { color: var(--entrada); }
+  .sval.s { color: var(--saida); }
+
+  /* LISTA */
+  .section-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin: 16px 0 8px; }
+  .item { display: flex; align-items: center; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
+  .item-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px; }
+  .item-dot.e { background: var(--entrada-bg); }
+  .item-dot.s { background: var(--saida-bg); }
+  .item-info { flex: 1; min-width: 0; }
+  .item-desc { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-meta { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .item-val { font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .item-val.e { color: var(--entrada); }
+  .item-val.s { color: var(--saida); }
+  .empty { text-align: center; padding: 32px 16px; color: var(--text3); font-size: 14px; line-height: 1.6; }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+  .btn-secondary { width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 13px; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+  .btn-back { background: none; border: none; color: var(--text3); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; margin-bottom: 8px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; font-size: 16px; color: var(--text); outline: none; appearance: none; -webkit-appearance: none; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group textarea { resize: none; height: 80px; }
+  .toggle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .toggle-btn { padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); font-size: 15px; font-weight: 600; cursor: pointer; color: var(--text2); }
+  .toggle-btn.on-e { background: var(--entrada-bg); border-color: var(--entrada); color: var(--entrada); }
+  .toggle-btn.on-s { background: var(--saida-bg); border-color: var(--saida); color: var(--saida); }
+
+  /* INSUMOS */
+  .pill { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-bg); color: var(--accent); border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 600; margin: 2px; }
+  .tag { background: var(--surface2); color: var(--text2); border-radius: 6px; padding: 2px 8px; font-size: 12px; }
+
+  /* RECEITA */
+  .ingrediente-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; background: var(--surface); border-radius: var(--radius-sm); padding: 10px; }
+  .ingrediente-row select, .ingrediente-row input { flex: 1; min-width: 0; }
+  .del-btn { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 2px 6px; flex-shrink: 0; }
+
+  /* PRECIFICACAO */
+  .preco-result { background: var(--accent-bg); border: 1px solid var(--accent); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
+  .preco-result .pval { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .preco-linha { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .preco-linha:last-child { border-bottom: none; }
+  .preco-linha strong { color: var(--text); }
+
+  /* CUSTOS FIXOS */
+  .cf-item { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; }
+  .cf-desc { flex: 1; font-size: 14px; }
+  .cf-val { font-size: 14px; font-weight: 600; color: var(--saida); }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 80px; left: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 13px 16px; border-radius: var(--radius-sm); font-size: 14px; text-align: center; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; }
+
+  /* MODAL */
+  #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; }
+  #modal-overlay.show { display: flex; }
+  #modal-box { background: var(--bg); border-radius: var(--radius) var(--radius) 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); width: 100%; max-height: 90vh; overflow-y: auto; }
+  #modal-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .range-val { font-size: 16px; font-weight: 700; color: var(--accent); min-width: 42px; }
+
+  .med-hint { font-size: 12px; color: var(--text3); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SCREENS -->
+<div id="s-caixa" class="screen active">
+  <div class="header"><h1>💰 Caixa</h1><button class="btn-back" style="font-size:13px;color:var(--accent);" onclick="openModal('lancamento')">+ Lançamento</button></div>
+  <div class="page-content">
+    <div class="saldo-hero"><div class="label">Saldo atual</div><div class="valor" id="saldo-val">R$ 0,00</div></div>
+    <div class="stats-row">
+      <div class="stat"><div class="slabel">Entradas</div><div class="sval e" id="tot-e">R$ 0,00</div></div>
+      <div class="stat"><div class="slabel">Saídas</div><div class="sval s" id="tot-s">R$ 0,00</div></div>
+    </div>
+    <div class="section-label">Últimos lançamentos</div>
+    <div id="lista-caixa"></div>
+    <button class="btn-secondary" onclick="exportarExcel()">⬇ Exportar planilha Excel</button>
+  </div>
+</div>
+
+<div id="s-receitas" class="screen">
+  <div class="header"><h1>🍳 Receitas</h1><button class="btn-back" style="font-size:13px;color:var(--accent);" onclick="openModal('receita')">+ Receita</button></div>
+  <div class="page-content">
+    <div class="section-label">Seus produtos</div>
+    <div id="lista-receitas"></div>
+    <div class="section-label" style="margin-top:20px;">Insumos cadastrados</div>
+    <div id="lista-insumos"></div>
+    <button class="btn-secondary" onclick="openModal('insumo')">+ Adicionar insumo</button>
+    <div class="section-label" style="margin-top:20px;">Custos fixos</div>
+    <div id="lista-cf"></div>
+    <button class="btn-secondary" onclick="openModal('cf')">+ Custo fixo (gás, luz…)</button>
+  </div>
+</div>
+
+<div id="s-preco" class="screen">
+  <div class="header"><h1>🏷 Preços</h1></div>
+  <div class="page-content">
+    <p style="font-size:14px;color:var(--text2);margin-bottom:12px;">Escolha um produto e defina sua margem de lucro.</p>
+    <div class="form-group"><label>Produto</label>
+      <select id="preco-produto" onchange="calcPreco()"><option value="">— selecione —</option></select>
+    </div>
+    <div class="form-group"><label>Margem de lucro (%)</label>
+      <input type="number" id="preco-margem" value="60" min="1" max="9999" inputmode="numeric" placeholder="Ex: 60" oninput="calcPreco()" style="width:100%;"/>
+    </div>
+    <div id="preco-result" style="display:none;">
+      <div class="preco-result">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Preço sugerido por unidade</div>
+        <div class="pval" id="preco-sugerido">R$ 0,00</div>
+      </div>
+      <div style="margin-top:12px;" id="preco-detalhes"></div>
+    </div>
+    <div id="preco-vazio" class="empty">Cadastre receitas e insumos na aba <strong>Receitas</strong> para calcular preços.</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <button class="nav-item active" onclick="goTo('caixa')" id="nav-caixa">
+    <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Caixa
+  </button>
+  <button class="nav-item" onclick="goTo('receitas')" id="nav-receitas">
+    <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Receitas
+  </button>
+  <button class="nav-item" onclick="goTo('preco')" id="nav-preco">
+    <svg viewBox="0 0 24 24"><path d="m7 7 10 10M7 17 17 7"/><circle cx="12" cy="12" r="9"/></svg>Preços
+  </button>
+</nav>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="e => { if(e.target===this) closeModal(); }">
+  <div id="modal-box" id="modal-box">
+    <div id="modal-content"></div>
+    <button class="btn-secondary" onclick="closeModal()" style="margin-top:8px;">Cancelar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- FORMS TEMPLATES (hidden) -->
+<template id="tpl-lancamento">
+  <h2>Novo lançamento</h2>
+  <div class="toggle-row">
+    <button class="toggle-btn on-e" id="tb-e" onclick="setTipo('e')">↑ Entrada</button>
+    <button class="toggle-btn" id="tb-s" onclick="setTipo('s')">↓ Saída</button>
+  </div>
+  <div class="form-group"><label>Valor (R$)</label><input type="number" id="fl-valor" inputmode="decimal" placeholder="0,00" min="0" step="0.01"/></div>
+  <div class="form-group"><label>Descrição</label><input type="text" id="fl-desc" placeholder="Ex: Venda 20 coxinhas"/></div>
+  <div class="form-group"><label>Categoria</label>
+    <select id="fl-cat">
+      <option>Vendas</option><option>Fornecedores</option><option>Custo de Transporte</option><option>Outros</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Data</label><input type="date" id="fl-data"/></div>
+  <button class="btn-primary" onclick="salvarLancamento()">Salvar</button>
+</template>
+
+<template id="tpl-insumo">
+  <h2>Novo insumo</h2>
+  <div class="form-group"><label>Nome</label><input type="text" id="fi-nome" placeholder="Ex: Farinha de trigo"/></div>
+  <div class="form-group"><label>Preço pago (R$)</label><input type="number" id="fi-preco" inputmode="decimal" placeholder="0,00" min="0" step="0.01"/></div>
+  <div class="form-group"><label>Quantidade da embalagem</label><input type="number" id="fi-qtd" inputmode="decimal" placeholder="Ex: 1000"/></div>
+  <div class="form-group"><label>Unidade</label>
+    <select id="fi-unidade">
+      <option value="g">gramas (g)</option>
+      <option value="ml">mililitros (ml)</option>
+      <option value="un">unidades (un)</option>
+      <option value="xcara">xícaras (xíc)</option>
+      <option value="colher">colheres de sopa (col)</option>
+    </select>
+  </div>
+  <div class="med-hint" id="fi-hint"></div>
+  <button class="btn-primary" onclick="salvarInsumo()">Salvar insumo</button>
+</template>
+
+<template id="tpl-cf">
+  <h2>Custo fixo</h2>
+  <div class="form-group"><label>Descrição</label><input type="text" id="fc-desc" placeholder="Ex: Gás de cozinha"/></div>
+  <div class="form-group"><label>Valor (R$)</label><input type="number" id="fc-val" inputmode="decimal" placeholder="0,00" min="0" step="0.01"/></div>
+  <div class="form-group"><label>Frequência (a cada quantos meses)</label><input type="number" id="fc-freq" inputmode="numeric" placeholder="Ex: 1" value="1" min="1"/></div>
+  <div class="form-group"><label>Dias úteis de produção por mês</label><input type="number" id="fc-dias" inputmode="numeric" placeholder="Ex: 20" value="20"/></div>
+  <button class="btn-primary" onclick="salvarCF()">Salvar</button>
+</template>
+
+<template id="tpl-receita">
+  <h2>Nova receita</h2>
+  <div class="form-group"><label>Nome do produto</label><input type="text" id="fr-nome" placeholder="Ex: Coxinha de frango"/></div>
+  <div class="form-group"><label>Rendimento do lote (quantas unidades faz)</label><input type="number" id="fr-rende" inputmode="numeric" placeholder="Ex: 20"/></div>
+  <div class="section-label" style="margin-bottom:8px;">Ingredientes do lote</div>
+  <div id="ingredientes-list"></div>
+  <button class="btn-secondary" onclick="addIngrediente()" style="margin-bottom:14px;">+ Adicionar ingrediente</button>
+  <button class="btn-primary" onclick="salvarReceita()">Salvar receita</button>
+</template>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC2_mJRHql_BJBjLlVlhJr8j6WCPhQcMNg",
+  authDomain: "empresa-livia.firebaseapp.com",
+  projectId: "empresa-livia",
+  storageBucket: "empresa-livia.firebasestorage.app",
+  messagingSenderId: "534460199858",
+  appId: "1:534460199858:web:2eddcd70bb5790d475aaab"
+};
+
+const fireApp = initializeApp(firebaseConfig);
+const firestore = getFirestore(fireApp);
+const DOC_REF = doc(firestore, 'app', 'dados');
+
+let db = { lancamentos: [], insumos: [], receitas: [], custosfixos: [] };
+let tipoLanc = 'e';
+let editIngredientes = [];
+
+// Expose functions to global scope (needed since we're in a module)
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.goTo = goTo;
+window.setTipo = setTipo;
+window.salvarLancamento = salvarLancamento;
+window.salvarInsumo = salvarInsumo;
+window.salvarCF = salvarCF;
+window.salvarReceita = salvarReceita;
+window.addIngrediente = addIngrediente;
+window.removeIngrediente = removeIngrediente;
+window.exportarExcel = exportarExcel;
+window.calcPreco = calcPreco;
+Object.defineProperty(window, 'editIngredientes', { get: () => editIngredientes });
+
+async function load() {
+  toast('Carregando dados…');
+  try {
+    const snap = await getDoc(DOC_REF);
+    if (snap.exists()) db = { ...db, ...snap.data() };
+  } catch(e) { console.error('Erro ao carregar:', e); }
+  render();
+}
+
+async function save() {
+  try { await setDoc(DOC_REF, db); } catch(e) { console.error('Erro ao salvar:', e); toast('Erro ao salvar!'); }
+}
+
+function fmt(v) { return 'R$ ' + Math.abs(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtData(d) { if (!d) return ''; const [y,m,dia]=d.split('-'); return `${dia}/${m}/${y}`; }
+
+function render() {
+  renderCaixa(); renderReceitas(); preencheSelectProduto();
+}
+
+function renderCaixa() {
+  const ent = db.lancamentos.filter(l=>l.tipo==='e').reduce((s,l)=>s+l.valor,0);
+  const sai = db.lancamentos.filter(l=>l.tipo==='s').reduce((s,l)=>s+l.valor,0);
+  const saldo = ent - sai;
+  const sv = document.getElementById('saldo-val');
+  sv.textContent = (saldo<0?'- ':'')+fmt(saldo);
+  sv.className = 'valor' + (saldo<0?' neg':'');
+  document.getElementById('tot-e').textContent = fmt(ent);
+  document.getElementById('tot-s').textContent = fmt(sai);
+  const lista = document.getElementById('lista-caixa');
+  const recent = db.lancamentos.slice().reverse().slice(0,8);
+  if (!recent.length) { lista.innerHTML = '<div class="empty">Nenhum lançamento ainda.<br>Toque em <strong>+ Lançamento</strong> para começar.</div>'; return; }
+  lista.innerHTML = recent.map(l=>`
+    <div class="item">
+      <div class="item-dot ${l.tipo}">${l.tipo==='e'?'↑':'↓'}</div>
+      <div class="item-info"><div class="item-desc">${l.desc||l.cat}</div><div class="item-meta">${l.cat} · ${l.data}</div></div>
+      <div class="item-val ${l.tipo}">${l.tipo==='e'?'+':'-'} ${fmt(l.valor)}</div>
+    </div>`).join('');
+}
+
+function renderReceitas() {
+  const lr = document.getElementById('lista-receitas');
+  if (!db.receitas.length) { lr.innerHTML = '<div class="empty">Nenhuma receita ainda. Toque em <strong>+ Receita</strong> acima.</div>'; }
+  else lr.innerHTML = db.receitas.map((r,i)=>{
+    const custo = calcCustoReceita(r);
+    return `<div class="card-white">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <strong style="font-size:15px;">${r.nome}</strong>
+        <span class="tag">lote de ${r.rende} un.</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">${r.ingredientes.map(ing=>`<span class="pill">${ing.qtd} ${ing.un} ${ing.nome}</span>`).join('')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13px;color:var(--text2);">Custo/un: <strong style="color:var(--saida);">${custo>0?fmt(custo/r.rende):'—'}</strong></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="editarReceita(${i})" style="background:none;border:none;font-size:13px;color:var(--accent);cursor:pointer;padding:4px 6px;">✏️ Editar</button>
+          <button onclick="excluirReceita(${i})" style="background:none;border:none;font-size:13px;color:var(--saida);cursor:pointer;padding:4px 6px;">🗑 Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const li = document.getElementById('lista-insumos');
+  if (!db.insumos.length) { li.innerHTML = '<div class="empty" style="padding:12px 0;">Nenhum insumo cadastrado.</div>'; }
+  else li.innerHTML = db.insumos.map((ins,i)=>`
+    <div class="cf-item">
+      <div class="cf-desc"><strong>${ins.nome}</strong><br><span style="font-size:12px;color:var(--text3);">${fmt(ins.preco)} por embalagem (${ins.qtd} ${ins.un}) · ${fmt(ins.preco/ins.qtd)}/${ins.un}</span></div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="editarInsumo(${i})" style="background:none;border:none;font-size:15px;cursor:pointer;padding:4px;">✏️</button>
+        <button onclick="excluirInsumo(${i})" style="background:none;border:none;font-size:15px;cursor:pointer;padding:4px;">🗑</button>
+      </div>
+    </div>`).join('');
+
+  const lc = document.getElementById('lista-cf');
+  if (!db.custosfixos.length) { lc.innerHTML = '<div class="empty" style="padding:12px 0;">Nenhum custo fixo cadastrado.</div>'; }
+  else lc.innerHTML = db.custosfixos.map((c,i)=>`
+    <div class="cf-item">
+      <div class="cf-desc">${c.desc}<br><span style="font-size:12px;color:var(--text3);">a cada ${c.freq||1} ${(c.freq||1)===1?'mês':'meses'}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span class="cf-val">${fmt(c.val)}</span>
+        <button onclick="excluirCF(${i})" style="background:none;border:none;font-size:15px;cursor:pointer;padding:4px;">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function calcCustoReceita(r) {
+  return r.ingredientes.reduce((total, ing)=>{
+    const ins = db.insumos.find(i=>i.nome===ing.nome);
+    if (!ins) return total;
+    const custoUnit = ins.preco / ins.qtd;
+    return total + custoUnit * ing.qtd;
+  }, 0);
+}
+
+function calcCustoFixoPorUnidade(receita) {
+  const totalCFMensal = db.custosfixos.reduce((s,c)=>s+(c.val/(c.freq||1)),0);
+  const dias = db.custosfixos[0]?.dias || 20;
+  const cfDiario = totalCFMensal / dias;
+  const totalUnidadesDia = db.receitas.reduce((s,r)=>s+r.rende,0) || receita.rende;
+  return cfDiario / totalUnidadesDia;
+}
+
+function preencheSelectProduto() {
+  const sel = document.getElementById('preco-produto');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">— selecione —</option>' + db.receitas.map(r=>`<option value="${r.nome}">${r.nome}</option>`).join('');
+  sel.value = val;
+  calcPreco();
+}
+
+function calcPreco() {
+  const nome = document.getElementById('preco-produto').value;
+  const margem = (parseFloat(document.getElementById('preco-margem').value) || 0) / 100;
+  const rv = document.getElementById('preco-result');
+  const vazio = document.getElementById('preco-vazio');
+  if (!nome) { rv.style.display='none'; vazio.style.display='block'; return; }
+  const rec = db.receitas.find(r=>r.nome===nome);
+  if (!rec) return;
+  const custoInsumos = calcCustoReceita(rec) / rec.rende;
+  const custoCF = calcCustoFixoPorUnidade(rec);
+  const custoTotal = custoInsumos + custoCF;
+  const preco = custoTotal * (1 + margem);
+  rv.style.display='block'; vazio.style.display='none';
+  document.getElementById('preco-sugerido').textContent = fmt(preco);
+  document.getElementById('preco-detalhes').innerHTML = `
+    <div class="preco-linha"><span>Custo dos insumos</span><strong>${fmt(custoInsumos)}/un</strong></div>
+    <div class="preco-linha"><span>Rateio custos fixos</span><strong>${fmt(custoCF)}/un</strong></div>
+    <div class="preco-linha"><span>Custo total</span><strong>${fmt(custoTotal)}/un</strong></div>
+    <div class="preco-linha"><span>Margem de lucro (${Math.round(margem*100)}%)</span><strong>${fmt(preco-custoTotal)}/un</strong></div>
+  `;
+}
+
+// MODAL
+function openModal(tplId) {
+  const tpl = document.getElementById('tpl-'+tplId);
+  if (!tpl) { console.error('Template não encontrado: tpl-'+tplId); return; }
+  document.getElementById('modal-content').innerHTML = tpl.innerHTML;
+  document.getElementById('modal-overlay').classList.add('show');
+  if (tplId==='lancamento') {
+    document.getElementById('fl-data').value = today();
+    tipoLanc = 'e';
+  }
+  if (tplId==='receita') { editIngredientes = []; renderIngredientes(); }
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+document.getElementById('modal-overlay').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+function setTipo(t) {
+  tipoLanc = t;
+  document.getElementById('tb-e').className = 'toggle-btn' + (t==='e'?' on-e':'');
+  document.getElementById('tb-s').className = 'toggle-btn' + (t==='s'?' on-s':'');
+}
+
+async function salvarLancamento() {
+  const valor = parseFloat(document.getElementById('fl-valor').value);
+  const desc = document.getElementById('fl-desc').value.trim();
+  const cat = document.getElementById('fl-cat').value;
+  const data = document.getElementById('fl-data').value;
+  if (!valor||valor<=0) { toast('Informe um valor válido'); return; }
+  if (!data) { toast('Informe a data'); return; }
+  db.lancamentos.push({ id: Date.now(), tipo: tipoLanc, valor, desc: desc||cat, cat, data: fmtData(data) });
+  closeModal(); render(); toast('Salvando…'); await save(); toast('Lançamento salvo!');
+}
+
+async function salvarInsumo() {
+  const nome = document.getElementById('fi-nome').value.trim();
+  const preco = parseFloat(document.getElementById('fi-preco').value);
+  const qtd = parseFloat(document.getElementById('fi-qtd').value);
+  const un = document.getElementById('fi-unidade').value;
+  if (!nome||!preco||!qtd) { toast('Preencha todos os campos'); return; }
+  db.insumos.push({ nome, preco, qtd, un });
+  closeModal(); render(); toast('Salvando…'); await save(); toast('Insumo salvo!');
+}
+
+async function salvarCF() {
+  const desc = document.getElementById('fc-desc').value.trim();
+  const val = parseFloat(document.getElementById('fc-val').value);
+  const freq = parseInt(document.getElementById('fc-freq').value) || 1;
+  const dias = parseInt(document.getElementById('fc-dias').value) || 20;
+  if (!desc||!val) { toast('Preencha todos os campos'); return; }
+  db.custosfixos.push({ desc, val, freq, dias });
+  closeModal(); render(); toast('Salvando…'); await save(); toast('Custo fixo salvo!');
+}
+
+function addIngrediente() {
+  editIngredientes.push({ nome: '', qtd: '', un: 'g' });
+  renderIngredientes();
+}
+function removeIngrediente(i) { editIngredientes.splice(i,1); renderIngredientes(); }
+function renderIngredientes() {
+  const el = document.getElementById('ingredientes-list');
+  if (!el) return;
+  if (!editIngredientes.length) { el.innerHTML = '<div class="empty" style="padding:8px 0;font-size:13px;">Adicione ingredientes abaixo.</div>'; return; }
+  const nomes = db.insumos.map(i=>`<option value="${i.nome}">${i.nome}</option>`).join('');
+  el.innerHTML = editIngredientes.map((ing,i)=>{
+    const ins = db.insumos.find(x=>x.nome===ing.nome);
+    const un = ins ? ins.un : (ing.un || '');
+    return `<div class="ingrediente-row">
+      <select onchange="selecionarInsumo(${i},this.value)" style="flex:2;">
+        <option value="">Insumo</option>${nomes.replace(`value="${ing.nome}"`,`value="${ing.nome}" selected`)}
+      </select>
+      <input type="number" placeholder="Qtd" value="${ing.qtd||''}" inputmode="decimal" style="width:60px;flex:unset;" onchange="editIngredientes[${i}].qtd=parseFloat(this.value)||0"/>
+      <span style="font-size:13px;color:var(--text2);min-width:36px;text-align:center;">${un}</span>
+      <button class="del-btn" onclick="removeIngrediente(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+window.selecionarInsumo = function(i, nome) {
+  const ins = db.insumos.find(x=>x.nome===nome);
+  editIngredientes[i].nome = nome;
+  editIngredientes[i].un = ins ? ins.un : '';
+  renderIngredientes();
+};
+
+async function salvarReceita() {
+  const nome = document.getElementById('fr-nome').value.trim();
+  const rende = parseInt(document.getElementById('fr-rende').value);
+  if (!nome||!rende) { toast('Informe nome e rendimento'); return; }
+  const ings = editIngredientes.filter(i=>i.nome&&i.qtd>0);
+  if (!ings.length) { toast('Adicione pelo menos um ingrediente'); return; }
+  db.receitas.push({ nome, rende, ingredientes: ings });
+  closeModal(); render(); preencheSelectProduto(); toast('Salvando…'); await save(); toast('Receita salva!');
+}
+
+// ── EDITAR / EXCLUIR INSUMOS ──
+let editIdx = -1;
+window.editarInsumo = function(i) {
+  editIdx = i;
+  const ins = db.insumos[i];
+  const tpl = document.getElementById('tpl-insumo');
+  document.getElementById('modal-content').innerHTML = tpl.innerHTML;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('fi-nome').value = ins.nome;
+  document.getElementById('fi-preco').value = ins.preco;
+  document.getElementById('fi-qtd').value = ins.qtd;
+  document.getElementById('fi-unidade').value = ins.un;
+  document.querySelector('#modal-content h2').textContent = 'Editar insumo';
+  document.querySelector('#modal-content .btn-primary').onclick = salvarEdicaoInsumo;
+};
+async function salvarEdicaoInsumo() {
+  const nome = document.getElementById('fi-nome').value.trim();
+  const preco = parseFloat(document.getElementById('fi-preco').value);
+  const qtd = parseFloat(document.getElementById('fi-qtd').value);
+  const un = document.getElementById('fi-unidade').value;
+  if (!nome||!preco||!qtd) { toast('Preencha todos os campos'); return; }
+  db.insumos[editIdx] = { nome, preco, qtd, un };
+  closeModal(); render(); toast('Salvando…'); await save(); toast('Insumo atualizado!');
+}
+window.excluirInsumo = async function(i) {
+  if (!confirm(`Excluir "${db.insumos[i].nome}"?`)) return;
+  db.insumos.splice(i, 1);
+  render(); toast('Salvando…'); await save(); toast('Insumo excluído!');
+};
+
+// ── EDITAR / EXCLUIR RECEITAS ──
+let editReceitaIdx = -1;
+window.editarReceita = function(i) {
+  editReceitaIdx = i;
+  const r = db.receitas[i];
+  editIngredientes = r.ingredientes.map(ing=>({...ing}));
+  const tpl = document.getElementById('tpl-receita');
+  document.getElementById('modal-content').innerHTML = tpl.innerHTML;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('fr-nome').value = r.nome;
+  document.getElementById('fr-rende').value = r.rende;
+  document.querySelector('#modal-content h2').textContent = 'Editar receita';
+  document.querySelector('#modal-content .btn-primary').onclick = salvarEdicaoReceita;
+  renderIngredientes();
+};
+async function salvarEdicaoReceita() {
+  const nome = document.getElementById('fr-nome').value.trim();
+  const rende = parseInt(document.getElementById('fr-rende').value);
+  if (!nome||!rende) { toast('Informe nome e rendimento'); return; }
+  const ings = editIngredientes.filter(i=>i.nome&&i.qtd>0);
+  if (!ings.length) { toast('Adicione pelo menos um ingrediente'); return; }
+  db.receitas[editReceitaIdx] = { nome, rende, ingredientes: ings };
+  closeModal(); render(); preencheSelectProduto(); toast('Salvando…'); await save(); toast('Receita atualizada!');
+}
+window.excluirReceita = async function(i) {
+  if (!confirm(`Excluir receita "${db.receitas[i].nome}"?`)) return;
+  db.receitas.splice(i, 1);
+  render(); preencheSelectProduto(); toast('Salvando…'); await save(); toast('Receita excluída!');
+};
+
+// ── EXCLUIR CUSTO FIXO ──
+window.excluirCF = async function(i) {
+  if (!confirm(`Excluir "${db.custosfixos[i].desc}"?`)) return;
+  db.custosfixos.splice(i, 1);
+  render(); toast('Salvando…'); await save(); toast('Custo fixo excluído!');
+};
+
+// ── EXPORTAR EXCEL ──
+function exportarExcel() {
+  const XLSX = window.XLSX;
+  if (!XLSX) { toast('Aguarde, carregando…'); return; }
+  const wb = XLSX.utils.book_new();
+
+  // Aba 1: Lançamentos
+  const lancRows = [['Data','Tipo','Categoria','Descrição','Valor (R$)']];
+  db.lancamentos.forEach(l => lancRows.push([l.data, l.tipo==='e'?'Entrada':'Saída', l.cat, l.desc, l.valor]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lancRows), 'Lançamentos');
+
+  // Aba 2: Insumos
+  const insRows = [['Nome','Preço embalagem (R$)','Qtd embalagem','Unidade','Custo por unidade']];
+  db.insumos.forEach(i => insRows.push([i.nome, i.preco, i.qtd, i.un, +(i.preco/i.qtd).toFixed(4)]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(insRows), 'Insumos');
+
+  // Aba 3: Receitas
+  const recRows = [['Produto','Rendimento (un)','Ingrediente','Qtd','Unidade','Custo insumos/un']];
+  db.receitas.forEach(r => {
+    const custo = calcCustoReceita(r);
+    r.ingredientes.forEach((ing, idx) => recRows.push([
+      idx===0 ? r.nome : '', idx===0 ? r.rende : '', ing.nome, ing.qtd, ing.un, idx===0 ? +(custo/r.rende).toFixed(4) : ''
+    ]));
+    if (!r.ingredientes.length) recRows.push([r.nome, r.rende, '—','','','']);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(recRows), 'Receitas');
+
+  // Aba 4: Custos Fixos
+  const cfRows = [['Descrição','Valor (R$)','Frequência (meses)','Valor mensal equivalente']];
+  db.custosfixos.forEach(c => cfRows.push([c.desc, c.val, c.freq||1, +(c.val/(c.freq||1)).toFixed(2)]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cfRows), 'Custos Fixos');
+
+  XLSX.writeFile(wb, 'meu_negocio.xlsx');
+  toast('Planilha Excel baixada!');
+}
+window.exportarExcel = exportarExcel;
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if (id==='preco') calcPreco();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+load();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
