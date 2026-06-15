@@ -621,10 +621,38 @@ function gerarWorkbook() {
   return wb;
 }
 
-function exportarExcel() {
+async function exportarExcel() {
+  const XLSX = window.XLSX;
   const wb = gerarWorkbook(); if (!wb) return;
-  window.XLSX.writeFile(wb, 'meu_negocio.xlsx');
-  toast('Planilha Excel baixada!');
+
+  // Gera o blob do arquivo
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+  // Tenta abrir o seletor de pasta (Chrome/Edge desktop e Android)
+  if (window.showSaveFilePicker) {
+    try {
+      const fh = await window.showSaveFilePicker({
+        suggestedName: 'meu_negocio.xlsx',
+        types: [{ description: 'Planilha Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
+      });
+      const w = await fh.createWritable();
+      await w.write(blob);
+      await w.close();
+      toast('Planilha salva com sucesso!');
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return; // usuário cancelou
+      // Se falhar por outro motivo, cai no fallback abaixo
+    }
+  }
+  // Fallback: download direto (Safari, Firefox, navegadores sem File System Access API)
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'meu_negocio.xlsx';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Planilha baixada!');
 }
 
 async function compartilharWhatsApp() {
@@ -632,30 +660,28 @@ async function compartilharWhatsApp() {
   if (!XLSX) { toast('Aguarde, carregando…'); return; }
   const wb = gerarWorkbook(); if (!wb) return;
 
-  // Gera o arquivo como blob
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const file = new File([blob], 'meu_negocio.xlsx', { type: blob.type });
 
-  // Usa Web Share API se disponível (funciona no celular)
+  // Web Share API com arquivo (abre seletor nativo do sistema — Android e iOS)
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: 'Meu Negócio – Planilha', text: 'Segue a planilha do negócio 📊' });
       return;
     } catch(e) {
-      if (e.name !== 'AbortError') {
-        // Fallback: baixa o arquivo e abre o WhatsApp
-        XLSX.writeFile(wb, 'meu_negocio.xlsx');
-        toast('Arquivo salvo! Anexe-o no WhatsApp.');
-        setTimeout(() => window.open('https://wa.me/', '_blank'), 1800);
-      }
-      return;
+      if (e.name === 'AbortError') return;
     }
   }
-  // Desktop: baixa e abre o WhatsApp Web
-  XLSX.writeFile(wb, 'meu_negocio.xlsx');
-  toast('Arquivo salvo! Abra o WhatsApp para anexar.');
-  setTimeout(() => window.open('https://web.whatsapp.com/', '_blank'), 1800);
+
+  // Fallback desktop: salva o arquivo e abre o WhatsApp Web
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'meu_negocio.xlsx';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Arquivo salvo! Agora anexe no WhatsApp Web.');
+  setTimeout(() => window.open('https://web.whatsapp.com/', '_blank'), 2000);
 }
 window.exportarExcel = exportarExcel;
 window.compartilharWhatsApp = compartilharWhatsApp;
