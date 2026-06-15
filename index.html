@@ -129,9 +129,22 @@
   .btn-export { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 8px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); }
   .btn-export-save { background: var(--surface); color: var(--text); }
   .btn-export-wpp  { background: #E8F5EE; color: #1A6B44; border-color: #1A6B44; }
+
+  /* OFFLINE BANNER */
+  #offline-banner { display:none; position:fixed; top:0; left:0; right:0; background:#8B2E12; color:#fff; text-align:center; font-size:13px; font-weight:600; padding:8px 16px; z-index:999; }
+  #offline-banner.show { display:block; }
+
+  /* FILTRO CAIXA */
+  .filtro-row { display:flex; gap:8px; margin-bottom:12px; align-items:center; }
+  .filtro-row input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 12px; font-size:14px; color:var(--text); outline:none; }
+  .filtro-row input:focus { border-color:var(--accent); }
+  .btn-filtro-limpar { background:none; border:none; color:var(--text3); font-size:13px; cursor:pointer; white-space:nowrap; padding:4px; }
 </style>
 </head>
 <body>
+
+<!-- OFFLINE BANNER -->
+<div id="offline-banner">⚠️ Sem conexão — os dados serão salvos quando a internet voltar</div>
 
 <!-- SCREENS -->
 <div id="s-caixa" class="screen active">
@@ -142,7 +155,12 @@
       <div class="stat"><div class="slabel">Entradas</div><div class="sval e" id="tot-e">R$ 0,00</div></div>
       <div class="stat"><div class="slabel">Saídas</div><div class="sval s" id="tot-s">R$ 0,00</div></div>
     </div>
-    <div class="section-label">Últimos lançamentos</div>
+    <div class="section-label">Lançamentos</div>
+    <div class="filtro-row">
+      <input type="date" id="filtro-de" onchange="renderCaixa()" placeholder="De"/>
+      <input type="date" id="filtro-ate" onchange="renderCaixa()" placeholder="Até"/>
+      <button class="btn-filtro-limpar" onclick="limparFiltro()">✕ Limpar</button>
+    </div>
     <div id="lista-caixa"></div>
     <div id="export-bar-caixa"></div>
   </div>
@@ -226,6 +244,23 @@
   <button class="btn-primary" onclick="salvarLancamento()">Salvar</button>
 </template>
 
+<template id="tpl-edit-lancamento">
+  <h2>Editar lançamento</h2>
+  <div class="toggle-row">
+    <button class="toggle-btn on-e" id="tb-e" onclick="setTipo('e')">↑ Entrada</button>
+    <button class="toggle-btn" id="tb-s" onclick="setTipo('s')">↓ Saída</button>
+  </div>
+  <div class="form-group"><label>Valor (R$)</label><input type="number" id="fl-valor" inputmode="decimal" placeholder="0,00" min="0" step="0.01"/></div>
+  <div class="form-group"><label>Descrição</label><input type="text" id="fl-desc" placeholder="Ex: Venda 20 coxinhas"/></div>
+  <div class="form-group"><label>Categoria</label>
+    <select id="fl-cat">
+      <option>Vendas</option><option>Fornecedores</option><option>Custo de Transporte</option><option>Outros</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Data</label><input type="date" id="fl-data"/></div>
+  <button class="btn-primary" onclick="salvarEdicaoLancamento()">Salvar alterações</button>
+</template>
+
 <template id="tpl-insumo">
   <h2>Novo insumo</h2>
   <div class="form-group"><label>Nome</label><input type="text" id="fi-nome" placeholder="Ex: Farinha de trigo"/></div>
@@ -297,7 +332,16 @@ window.addIngrediente = addIngrediente;
 window.removeIngrediente = removeIngrediente;
 window.exportarExcel = exportarExcel;
 window.calcPreco = calcPreco;
+window.limparFiltro = limparFiltro;
+window.salvarEdicaoLancamento = salvarEdicaoLancamento;
 Object.defineProperty(window, 'editIngredientes', { get: () => editIngredientes });
+
+// ── OFFLINE DETECTION ──
+function updateOnlineStatus() {
+  document.getElementById('offline-banner').classList.toggle('show', !navigator.onLine);
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
 
 async function load() {
   toast('Carregando dados…');
@@ -320,24 +364,62 @@ function render() {
   renderCaixa(); renderReceitas(); preencheSelectProduto(); renderExportBars();
 }
 
+function parseDMY(str) {
+  if (!str) return null;
+  const [d,m,y] = str.split('/');
+  return new Date(+y, +m-1, +d);
+}
+function parseYMD(str) {
+  if (!str) return null;
+  const [y,m,d] = str.split('-');
+  return new Date(+y, +m-1, +d);
+}
+
+function limparFiltro() {
+  document.getElementById('filtro-de').value = '';
+  document.getElementById('filtro-ate').value = '';
+  renderCaixa();
+}
+
 function renderCaixa() {
-  const ent = db.lancamentos.filter(l=>l.tipo==='e').reduce((s,l)=>s+l.valor,0);
-  const sai = db.lancamentos.filter(l=>l.tipo==='s').reduce((s,l)=>s+l.valor,0);
+  const de  = parseYMD(document.getElementById('filtro-de')?.value);
+  const ate = parseYMD(document.getElementById('filtro-ate')?.value);
+
+  const filtrados = db.lancamentos.filter(l => {
+    const d = parseDMY(l.data);
+    if (!d) return true;
+    if (de  && d < de)  return false;
+    if (ate && d > ate) return false;
+    return true;
+  });
+
+  const ent = filtrados.filter(l=>l.tipo==='e').reduce((s,l)=>s+l.valor,0);
+  const sai = filtrados.filter(l=>l.tipo==='s').reduce((s,l)=>s+l.valor,0);
   const saldo = ent - sai;
   const sv = document.getElementById('saldo-val');
   sv.textContent = (saldo<0?'- ':'')+fmt(saldo);
   sv.className = 'valor' + (saldo<0?' neg':'');
   document.getElementById('tot-e').textContent = fmt(ent);
   document.getElementById('tot-s').textContent = fmt(sai);
+
   const lista = document.getElementById('lista-caixa');
-  const recent = db.lancamentos.slice().reverse().slice(0,8);
-  if (!recent.length) { lista.innerHTML = '<div class="empty">Nenhum lançamento ainda.<br>Toque em <strong>+ Lançamento</strong> para começar.</div>'; return; }
-  lista.innerHTML = recent.map(l=>`
-    <div class="item">
+  const ordenados = filtrados.slice().reverse();
+  if (!ordenados.length) {
+    lista.innerHTML = '<div class="empty">Nenhum lançamento encontrado.</div>';
+    return;
+  }
+  lista.innerHTML = ordenados.map((l,i)=>{
+    const idx = db.lancamentos.indexOf(l);
+    return `<div class="item">
       <div class="item-dot ${l.tipo}">${l.tipo==='e'?'↑':'↓'}</div>
       <div class="item-info"><div class="item-desc">${l.desc||l.cat}</div><div class="item-meta">${l.cat} · ${l.data}</div></div>
-      <div class="item-val ${l.tipo}">${l.tipo==='e'?'+':'-'} ${fmt(l.valor)}</div>
-    </div>`).join('');
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="item-val ${l.tipo}">${l.tipo==='e'?'+':'-'} ${fmt(l.valor)}</div>
+        <button onclick="editarLancamento(${idx})" style="background:none;border:none;font-size:15px;cursor:pointer;padding:2px 4px;">✏️</button>
+        <button onclick="excluirLancamento(${idx})" style="background:none;border:none;font-size:15px;cursor:pointer;padding:2px 4px;">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderReceitas() {
@@ -462,6 +544,41 @@ async function salvarLancamento() {
   db.lancamentos.push({ id: Date.now(), tipo: tipoLanc, valor, desc: desc||cat, cat, data: fmtData(data) });
   closeModal(); render(); toast('Salvando…'); await save(); toast('Lançamento salvo!');
 }
+
+let editLancIdx = -1;
+window.editarLancamento = function(i) {
+  editLancIdx = i;
+  const l = db.lancamentos[i];
+  const tpl = document.getElementById('tpl-edit-lancamento');
+  document.getElementById('modal-content').innerHTML = tpl.innerHTML;
+  document.getElementById('modal-overlay').classList.add('show');
+  tipoLanc = l.tipo;
+  document.getElementById('tb-e').className = 'toggle-btn' + (l.tipo==='e'?' on-e':'');
+  document.getElementById('tb-s').className = 'toggle-btn' + (l.tipo==='s'?' on-s':'');
+  document.getElementById('fl-valor').value = l.valor;
+  document.getElementById('fl-desc').value = l.desc||'';
+  document.getElementById('fl-cat').value = l.cat;
+  // converte dd/mm/yyyy → yyyy-mm-dd para o input date
+  if (l.data) {
+    const [d,m,y] = l.data.split('/');
+    document.getElementById('fl-data').value = `${y}-${m}-${d}`;
+  }
+};
+async function salvarEdicaoLancamento() {
+  const valor = parseFloat(document.getElementById('fl-valor').value);
+  const desc = document.getElementById('fl-desc').value.trim();
+  const cat = document.getElementById('fl-cat').value;
+  const data = document.getElementById('fl-data').value;
+  if (!valor||valor<=0) { toast('Informe um valor válido'); return; }
+  if (!data) { toast('Informe a data'); return; }
+  db.lancamentos[editLancIdx] = { ...db.lancamentos[editLancIdx], tipo: tipoLanc, valor, desc: desc||cat, cat, data: fmtData(data) };
+  closeModal(); render(); toast('Salvando…'); await save(); toast('Lançamento atualizado!');
+}
+window.excluirLancamento = async function(i) {
+  if (!confirm(`Excluir lançamento "${db.lancamentos[i].desc||db.lancamentos[i].cat}"?`)) return;
+  db.lancamentos.splice(i, 1);
+  render(); toast('Salvando…'); await save(); toast('Lançamento excluído!');
+};
 
 async function salvarInsumo() {
   const nome = document.getElementById('fi-nome').value.trim();
@@ -617,6 +734,32 @@ function gerarWorkbook() {
   const cfRows = [['Descrição','Valor (R$)','Frequência (meses)','Valor mensal equivalente']];
   db.custosfixos.forEach(c => cfRows.push([c.desc, c.val, c.freq||1, +(c.val/(c.freq||1)).toFixed(2)]));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cfRows), 'Custos Fixos');
+
+  // Aba Resumo
+  const ent = db.lancamentos.filter(l=>l.tipo==='e').reduce((s,l)=>s+l.valor,0);
+  const sai = db.lancamentos.filter(l=>l.tipo==='s').reduce((s,l)=>s+l.valor,0);
+  const cfMensal = db.custosfixos.reduce((s,c)=>s+(c.val/(c.freq||1)),0);
+  const resumoRows = [
+    ['Resumo Geral',''],
+    ['',''],
+    ['💰 Financeiro',''],
+    ['Total de entradas', ent],
+    ['Total de saídas', sai],
+    ['Saldo atual', ent - sai],
+    ['',''],
+    ['📦 Cadastros',''],
+    ['Insumos cadastrados', db.insumos.length],
+    ['Receitas cadastradas', db.receitas.length],
+    ['Lançamentos registrados', db.lancamentos.length],
+    ['',''],
+    ['🔧 Custos fixos',''],
+    ['Total mensal de custos fixos', cfMensal],
+    ['',''],
+    ['🍳 Custo por produto (por unidade)',''],
+    ['Produto','Custo/un'],
+    ...db.receitas.map(r => [r.nome, +(calcCustoReceita(r)/r.rende).toFixed(4)])
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoRows), 'Resumo');
 
   return wb;
 }
