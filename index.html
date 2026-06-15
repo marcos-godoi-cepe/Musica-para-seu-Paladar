@@ -303,19 +303,8 @@ async function load() {
   toast('Carregando dados…');
   try {
     const snap = await getDoc(DOC_REF);
-    if (snap.exists()) {
-      const data = snap.data();
-      db = { ...db, ...data };
-      // Diagnóstico temporário — mostra o que veio do Firebase
-      const info = `Firebase OK:\n• ${data.insumos?.length||0} insumo(s)\n• ${data.receitas?.length||0} receita(s)\n• ${data.lancamentos?.length||0} lançamento(s)\n• ${data.custosfixos?.length||0} custo(s) fixo(s)`;
-      setTimeout(() => alert(info), 500);
-    } else {
-      alert('Firebase: documento "app/dados" não encontrado.');
-    }
-  } catch(e) {
-    alert('Erro ao carregar do Firebase:\n' + e.message);
-    console.error('Erro ao carregar:', e);
-  }
+    if (snap.exists()) db = { ...db, ...snap.data() };
+  } catch(e) { console.error('Erro ao carregar:', e); }
   render();
 }
 
